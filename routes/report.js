@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
 const Gadget = require('../models/Gadget');
+const authenticate = require('../middleware/auth');
+
 
 // Report Gadget
 router.post('/report', async (req, res) => {
@@ -54,26 +56,28 @@ router.post('/report', async (req, res) => {
   }
 });
 
+
 // Search Gadgets
-// Search Gadgets
-router.get('/search', async (req, res) => {
-    const query = req.query.query;
-    if (!query) {
-      return res.status(400).json({ error: 'Query parameter is required' });
-    }
-  
-    try {
-      const gadgets = await Gadget.find({
-        $or: [
-          { model: { $regex: query, $options: 'i' } },
-          { brand: { $regex: query, $options: 'i' } }
-        ]
-      });
-      res.json(gadgets);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+router.get('/search', authenticate, async (req, res) => {
+  const query = req.query.query;
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter is required' });
+  }
+
+  try {
+    // Search gadgets that belong to the authenticated user
+    const gadgets = await Gadget.find({
+      owner: req.userId, // Only gadgets that belong to the logged-in user
+      $or: [
+        { model: { $regex: query, $options: 'i' } },
+        { brand: { $regex: query, $options: 'i' } }
+      ]
+    });
+    res.json(gadgets);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 //get all reports
   router.get('/reports', async (req, res) => {
     try {
