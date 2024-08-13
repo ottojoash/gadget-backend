@@ -13,6 +13,7 @@ router.post('/register', authenticate, async (req, res) => {
     type,
     model,
     imei,
+    deviceId,  // Add this field for laptops
     brand,
     serialNumber,
     color,
@@ -22,12 +23,24 @@ router.post('/register', authenticate, async (req, res) => {
     storageSize,
     simType,
     phoneNumber,
-    network
+    network,
+    ram  // Add this field for laptops
   } = req.body;
 
   // Validation
-  if (!type || !model || !brand || !serialNumber || !description || !purchaseLocation || !registrationDate) {
+  if (!type || !model || !brand || !serialNumber || !description || !purchaseLocation || !registrationDate || !storageSize) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Conditional validation for phone and laptop
+  if (type === 'phone') {
+    if (!imei || !phoneNumber || !network || !simType) {
+      return res.status(400).json({ error: 'Missing required fields for phone' });
+    }
+  } else if (type === 'laptop') {
+    if (!deviceId || !ram) {
+      return res.status(400).json({ error: 'Missing required fields for laptop' });
+    }
   }
 
   try {
@@ -35,37 +48,39 @@ router.post('/register', authenticate, async (req, res) => {
     const newGadget = new Gadget({
       type,
       model,
-      imei: type === 'laptop' ? undefined : imei,
+      imei: type === 'phone' ? imei : undefined, // Only include if type is phone
+      deviceId: type === 'laptop' ? deviceId : undefined, // Only include if type is laptop
       brand,
       serialNumber,
+      ram: type === 'laptop' ? ram : undefined, // Only include if type is laptop
       color,
       description,
       purchaseLocation,
       registrationDate,
-      storageSize: type === 'laptop' ? storageSize : undefined,
-      simType: type === 'laptop' ? undefined : simType,
-      phoneNumber: type === 'laptop' ? undefined : phoneNumber,
-      network: type === 'laptop' ? undefined : network,
+      storageSize,
+      simType: type === 'phone' ? simType : undefined, // Only include if type is phone
+      phoneNumber: type === 'phone' ? phoneNumber : undefined, // Only include if type is phone
+      network: type === 'phone' ? network : undefined, // Only include if type is phone
       owner: req.userId // Attach the gadget to the authenticated user's ID
     });
 
-    await newGadget.save();
-
-    // Add gadget to user's gadgets array
-    await User.findByIdAndUpdate(req.userId, { $push: { gadgets: newGadget._id } });
-
-    res.status(201).json(newGadget);
+    // Save the new gadget to the database
+    const savedGadget = await newGadget.save();
+    res.status(201).json(savedGadget);
   } catch (error) {
-    console.error('Error saving gadget:', error);
-    res.status(400).json({ error: error.message });
+    console.error('Error registering gadget:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // View All Gadgets Registered by the Authenticated User
 router.get('/view', authenticate, async (req, res) => {
   try {
-    // Find gadgets owned by the authenticated user
-    const gadgets = await Gadget.find({ owner: req.userId }, 'brand type serialNumber imei storageSize ram color');
+    // Find gadgets owned by the authenticated user with all necessary fields
+    const gadgets = await Gadget.find(
+      { owner: req.userId },
+      'model brand type serialNumber imei deviceId storageSize ram color registrationDate simType'
+    );
     
     // Check if gadgets were found
     if (gadgets.length === 0) {
@@ -78,6 +93,7 @@ router.get('/view', authenticate, async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
 
 
 // View Gadget Details by ID

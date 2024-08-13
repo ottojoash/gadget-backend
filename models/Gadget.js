@@ -11,7 +11,15 @@ const GadgetSchema = new mongoose.Schema({
     },
     imei: {
         type: String,
-        required: function () { return this.type !== 'laptop'; }
+        required: function () { return this.type === 'phone'; }
+    },
+    deviceId: {
+        type: String,
+        required: function () { return this.type === 'laptop'; }
+    },
+    ram: {
+        type: String,
+        required: function () { return this.type === 'laptop'; }
     },
     brand: {
         type: String,
@@ -36,19 +44,19 @@ const GadgetSchema = new mongoose.Schema({
     },
     storageSize: {
         type: String,
-        required: function () { return this.type === 'laptop'; }
+        required: true  // Make storageSize required for both types
     },
     simType: {
         type: String,
-        required: function () { return this.type !== 'laptop'; }
+        required: function () { return this.type === 'phone'; }
     },
     phoneNumber: {
         type: String,
-        required: function () { return this.type !== 'laptop'; }
+        required: function () { return this.type === 'phone'; }
     },
     network: {
         type: String,
-        required: function () { return this.type !== 'laptop'; }
+        required: function () { return this.type === 'phone'; }
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
