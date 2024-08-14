@@ -28,25 +28,32 @@ router.get('/current-user', authMiddleware, async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-  
-    try {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(401).json({ success: false, message: 'Invalid email or password' });
-      }
-  
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res.status(401).json({ success: false, message: 'Invalid email or password' });
-      }
-  
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      res.json({ success: true, token });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
-  });
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    // Include additional fields in the token payload
+    const token = jwt.sign({
+      id: user._id,
+      phoneNumber: user.phoneNumber, // Include phoneNumber
+      tin: user.tin,               // Include TIN
+      brn: user.brn                // Include BRN
+    }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ success: true, token });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
   // Get users' NINs and BRNs
 router.get('/users', authMiddleware, async (req, res) => {
