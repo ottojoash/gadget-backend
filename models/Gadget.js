@@ -44,7 +44,7 @@ const GadgetSchema = new mongoose.Schema({
     },
     storageSize: {
         type: String,
-        required: true  // Make storageSize required for both types
+        required: true
     },
     simType: {
         type: String,

@@ -47,6 +47,35 @@ router.post('/login', async (req, res) => {
       res.status(500).json({ success: false, message: error.message });
     }
   });
+
+  // Get users' NINs and BRNs
+router.get('/users', authMiddleware, async (req, res) => {
+  try {
+    // Query the User model, selecting only the `nins` and `brns` fields
+    const users = await User.find({}, 'tin brn'); // Adjust the fields according to your schema
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/search-users', authMiddleware, async (req, res) => {
+  const { brn, tin } = req.query;
+
+  try {
+    // Build the query object
+    let query = {};
+    if (brn) query.brn = brn;
+    if (tin) query.tin = tin;
+
+    // Search users based on the query
+    const users = await User.find(query, 'brn tin'); // Select only the `brn` and `tin` fields
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
   
 
 module.exports = router;
