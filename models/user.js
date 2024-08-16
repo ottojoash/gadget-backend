@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     brn: { type: String },
     tin: { type: String },
     password: { type: String, required: true },
+    category: { type: String, required: true }, // Add category field
     // Array of ObjectIds that reference the Gadget model
     gadgets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Gadget' }]
 });

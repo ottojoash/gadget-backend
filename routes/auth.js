@@ -6,10 +6,10 @@ const authMiddleware = require('../middleware/auth');
 
 // Register
 router.post('/register', async (req, res) => {
-  const { fullName, email, address, phoneNumber, brn, tin, password } = req.body;
+  const { fullName, email, address, phoneNumber, brn, tin, password,category } = req.body;
   
   try {
-    const user = new User({ fullName, email, address, phoneNumber, brn, tin, password });
+    const user = new User({ fullName, email, address, phoneNumber, brn, tin, password,category });
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {

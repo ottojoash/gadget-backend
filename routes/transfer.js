@@ -57,35 +57,17 @@ router.post('/batch', authMiddleware, async (req, res) => {
   }
 });
 
-// Transfer Ownership for a Single Gadget
-// Transfer Ownership for a Single Gadget
+
 router.put('/piece', authMiddleware, async (req, res) => {
-  const { newOwnerBrn, newOwnerTin, gadgetId } = req.body;
+  const { deviceType, imei, serialNumber, transferTo, transferDetails } = req.body;
 
   try {
     // Extract current owner from authenticated user
     const currentOwner = req.user;
     console.log('Current Owner ID:', currentOwner.id);
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(gadgetId)) {
-      return res.status(400).json({ error: 'Invalid gadget ID format' });
-    }
-
-    // Find the new owner by BRN or TIN
-    const query = {};
-    if (newOwnerBrn) query.brn = newOwnerBrn;
-    if (newOwnerTin) query.tin = newOwnerTin;
-
-    const newOwner = await User.findOne(query);
-    console.log('New Owner:', newOwner);
-
-    if (!newOwner) {
-      return res.status(404).json({ error: 'New owner not found' });
-    }
-
-    // Find the gadget
-    const gadget = await Gadget.findById(gadgetId);
+    // Find the gadget based on serial number and IMEI
+    const gadget = await Gadget.findOne({ serialNumber, imei });
     console.log('Gadget:', gadget);
 
     if (!gadget) {
@@ -97,9 +79,19 @@ router.put('/piece', authMiddleware, async (req, res) => {
       return res.status(403).json({ error: 'Gadget does not belong to the current owner' });
     }
 
+    // Find the new owner by TIN/BRN
+    const newOwner = await User.findOne({
+      $or: [{ brn: transferTo }, { tin: transferTo }]
+    });
+    console.log('New Owner:', newOwner);
+
+    if (!newOwner) {
+      return res.status(404).json({ error: 'New owner not found' });
+    }
+
     // Update the gadget's owner field
     const updatedGadget = await Gadget.findByIdAndUpdate(
-      gadgetId,
+      gadget._id,
       { owner: newOwner._id },
       { new: true }  // Returns the updated gadget
     );
@@ -110,16 +102,16 @@ router.put('/piece', authMiddleware, async (req, res) => {
     }
 
     // Update gadgets list for current owner and new owner
-    await User.findByIdAndUpdate(currentOwner.id, { $pull: { gadgets: gadgetId } });
-    await User.findByIdAndUpdate(newOwner.id, { $push: { gadgets: gadgetId } });
+    await User.findByIdAndUpdate(currentOwner.id, { $pull: { gadgets: gadget._id } });
+    await User.findByIdAndUpdate(newOwner.id, { $push: { gadgets: gadget._id } });
 
     // Create notification for the new owner
     await Notification.create({
       title: 'Gadget Ownership Transferred',
-      message: `You have been assigned ownership of gadget: ${gadgetId}`,
-      user: newOwner.id,
+      message: `You have been assigned ownership of gadget: ${gadget._id}`,
+      user: newOwner._id,
       type: 'Transfer',
-      gadget: gadgetId
+      gadget: gadget._id
     });
 
     res.status(200).json({ message: 'Ownership transferred successfully', gadget: updatedGadget });
@@ -128,6 +120,7 @@ router.put('/piece', authMiddleware, async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
 
 
 
