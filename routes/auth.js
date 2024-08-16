@@ -6,16 +6,22 @@ const authMiddleware = require('../middleware/auth');
 
 // Register
 router.post('/register', async (req, res) => {
-  const { fullName, email, address, phoneNumber, brn, tin, password,category } = req.body;
+  console.log(req.body); // Log the request body
+  const { fullName, email, address, phoneNumber, brn, tin, password, category } = req.body;
   
   try {
-    const user = new User({ fullName, email, address, phoneNumber, brn, tin, password,category });
+    if (category === 'Individual' && !brn) {
+      req.body.brn = undefined; // This ensures brn is not included if it's empty for individuals
+    }
+
+    const user = new User({ fullName, email, address, phoneNumber, brn, tin, password, category });
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
+
 
 router.get('/current-user', authMiddleware, async (req, res) => {
     try {
@@ -44,9 +50,12 @@ router.post('/login', async (req, res) => {
     // Include additional fields in the token payload
     const token = jwt.sign({
       id: user._id,
+      fullName: user.fullName,            // Include name
+      email: user.email,          // Include email
       phoneNumber: user.phoneNumber, // Include phoneNumber
-      tin: user.tin,               // Include TIN
-      brn: user.brn                // Include BRN
+      tin: user.tin,              // Include TIN
+      brn: user.brn,              // Include BRN
+      category: user.category     // Include category
     }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.json({ success: true, token });
