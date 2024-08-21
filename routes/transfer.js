@@ -58,6 +58,7 @@ router.post('/batch', authMiddleware, async (req, res) => {
 });
 
 
+
 router.put('/piece', authMiddleware, async (req, res) => {
   const { deviceType, imei, serialNumber, transferTo, transferDetails } = req.body;
 
