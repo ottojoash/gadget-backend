@@ -278,5 +278,25 @@ async function validateAndSaveGadgets(gadgets, userId) {
   return results;
 }
 
+// Update Gadget by ID
+router.put('/update/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const updatedData = req.body;
+
+  try {
+    // Find the gadget by ID and update it
+    const updatedGadget = await Gadget.findByIdAndUpdate(id, updatedData, { new: true });
+
+    if (!updatedGadget) {
+      return res.status(404).json({ error: 'Gadget not found' });
+    }
+
+    res.status(200).json(updatedGadget);
+  } catch (error) {
+    console.error('Error updating gadget:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 
 module.exports = router;
